@@ -1,5 +1,5 @@
 /*  ELEC 490 Solar Power Optimizer
-
+//isobel sucks
 */
 // ANALOG PINS
 #define VinPin A1
