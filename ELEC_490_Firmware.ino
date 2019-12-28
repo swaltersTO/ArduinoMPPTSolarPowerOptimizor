@@ -31,16 +31,17 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-  //OCR2B = 50;
-  //IinSense_1();
-  //VinSense_1();
-  //VoutSense_1();
+  //OCR2B = 50;   //for debugging
+  //Printing numbers required for testing of SPO
+  IinSense_1();
+  VinSense_1();
+  VoutSense_1();
   
   mppt_DCSource();
-  //OCR2B = 50;
 }
 
 void frequencySetUp(){
+  //Increase the arduino frequency from 960Hz to 100kHz
   pinMode(DutyPin, OUTPUT);
   TCCR2A = 0x23;
   TCCR2B = 0x09;
@@ -52,48 +53,42 @@ void frequencySetUp(){
 
 float IinSense_1(){
   float IIn;
-  //int k = 0;
-  /*while(k<100){
-    IinSense = IinSense + (float)(analogRead(IinPin));
-    k++;
-  }*/
-  //IinSense = IinSense/100;
- IinSense = 0.98*IinSense + 0.02*(float)(analogRead(IinPin));
+  //IIR filter to get more appropriate values. Weights determined emperically.
+  IinSense = 0.98*IinSense + 0.02*(float)(analogRead(IinPin));
   
   // Calculation of input voltage including resistive divider factor.
-  IIn = IinSense*(-0.02895)+14.80; // Test w solar power simulator
- // Serial.println(IIn);
+  IIn = IinSense*(-0.02895)+14.80; // Numbers calculated empirically to change analog values to Amperes 
+  Serial.println(IIn);
   return IIn;
 }
 
 float VinSense_1(){
-  /*int k = 0;
-  while(k<100){
-    VinSense = VinSense + analogRead(VinPin);
-    k++;
-  }
-  VinSense = VinSense/100;*/
+  //IIR filter to get more appropriate values. Weights determined emperically.
   VinSense = 0.98*VinSense + 0.02*analogRead(VinPin);
 
   // Calculation of output voltage including resistive divider factor.
   voltageIn = VinSense * (5.00/1023.0) *(1/0.091);
- // Serial.println(voltageIn);
+  Serial.println(voltageIn);
   return voltageIn;
 }
 
 float VoutSense_1(){
+  //IIR filter to get more appropriate values. Weights determined emperically.
    VoutSense = 0.9*VoutSense + 0.1*analogRead(VoutPin);
 
    voltageOut = VoutSense*(5.0/1023.0)*(1/0.065);
-  // Serial.println(voltageOut);
+   Serial.println(voltageOut);
    if(voltageOut > 71.0){ // Output capacitor checking
     OCR2B = 10;
    }
    return voltageOut;
 }
 
+//MPPT Algorithm
 void mppt_DCSource(){
   char buffer[30];
+   //d is the duty cycle value put into the OCR2B register
+   //C is the change in duty cycle which is previously defined
    d = d + C;
    d=(d<0)?0:(d>255)?255:d;
    OCR2B=d;
@@ -107,14 +102,14 @@ void mppt_DCSource(){
    }
    
    Pin = Iin*Vin;
-   
+   //If the current power is greater or equal to the previous power do not change the direction of the duty cycle
    if(Pin>=Pb){
     C = C;
+   //If it is lower than the previous power value, change the sign of the change in duty cycle
    }else{
     C = -C;
    }
 
-  
   sprintf(buffer,"Pin %d Pprev %d D: %d",(int)(Pin),(int)(Pb), (int)OCR2B*10/16);
   Serial.println(buffer);
   Pb = Pin;
